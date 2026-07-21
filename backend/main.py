@@ -1,4 +1,3 @@
-
 from backend.database import Base, engine
 from fastapi import FastAPI
 from backend.services.v1.router import v1_router
