@@ -1,5 +1,5 @@
 from backend.services.v1 import public, users, user_child
-from backend.services.v1.internal.managmet import children, classrooms
+from backend.services.v1.internal.management import children, classrooms
 from fastapi import APIRouter
 
 v1_router = APIRouter()

@@ -2,10 +2,14 @@ from dotenv import load_dotenv
 import os
 from pwdlib import PasswordHash
 import jwt
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from datetime import datetime, timedelta, UTC
-
+from fastapi.security import OAuth2PasswordBearer
+from typing import Annotated
+from backend.database import getdb, Select, Session
+from backend.models import User
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 Secret_key = os.environ["SECRET_KEY"]
 
@@ -55,3 +59,13 @@ def decode_token(token: str):
     except InvalidTokenError:
         raise HTTPException(status_code=403, detail="Forbidden: Invalid Token")
     return id
+
+
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], db: Annotated[Session, Depends(getdb)]):
+    id = decode_token(token)
+    if id is None:
+        raise HTTPException(status_code=401, detail="Invalid Token")
+    user = db.scalars(Select(User).where(User.uuid == id)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+    return user

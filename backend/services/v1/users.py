@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Depends, HTTPException, APIRouter, Response
-from fastapi.security import OAuth2AuthorizationCodeBearer
-from backend.schemas import UserResponse, UserCreate, UserLogin
-from backend.database import getdb, Base, engine, Session, Select, or_
+from fastapi import Depends, HTTPException, APIRouter, Response
+from backend.schemas import UserResponse, UserCreate, UserLogin, Token
+from backend.database import getdb, Session, Select, or_
 from backend.models import User
-from backend.dependencies import generate_token, decode_token, get_pass_hash, verify_password
+from typing import Annotated
+from backend.dependencies import generate_token, decode_token, get_pass_hash, verify_password, get_current_user
+
 
 router = APIRouter(tags=["User_V1"])
 
@@ -14,7 +15,8 @@ def get_user_by_name(user_name: str, db: Session = Depends(getdb)):
         or_(User.first_name == user_name, User.last_name == user_name)))
     user = db.scalars(query).first()
     if not user:
-        raise HTTPException(status_code=404, detail="User Does Not Exist!")
+        raise HTTPException(
+            status_code=401, detail="Invalid Email Or Password")
     return user
 
 
@@ -35,24 +37,25 @@ def create_user(user: UserCreate, db: Session = Depends(getdb)):
 
 @router.post("/login")
 def login_user(user: UserLogin, db: Session = Depends(getdb)):
-    email = db.scalars(Select(User.email).where(
-        User.email == user.email)).first()
-    password = db.scalars(Select(User.password).where(
-        User.email == user.email)).first()
-    id = db.scalars(Select(User.uuid).where(User.email == user.email)).first()
-    if password is None:
-        raise HTTPException(
-            status_code=401, detail="Invalid Email Or Password")
 
+    query = (Select(User).where(User.email == user.email))
+    user_login = db.scalars(query).first()
+    if not user_login:
+        raise HTTPException(status_code=404, detail="User Does Not Exist")
+    password = user_login.password
+    uuid = user_login.uuid
+    email = user_login.email
     verification = verify_password(user.password, password)
 
-    if not email:
-        raise HTTPException(
-            status_code=401, detail="Invalid Email Or Password")
     if not verification:
         raise HTTPException(
             status_code=401, detail="Invalid Email Or Password")
     else:
-        payload = {"sub": user.email}
-        res = generate_token(payload)
-        return {"access_token": res, "token_type": "bearer"}
+        payload = {"sub": str(uuid), "email": email}
+        access_token = generate_token(payload)
+        return Token(access_token=access_token, token_type="bearer")
+
+
+@router.get("/me")
+def test_token(current_user: Annotated[User, Depends(get_current_user)]):
+    return current_user
