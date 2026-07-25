@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Select
+from sqlalchemy import create_engine, Select, or_
 from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from dotenv import load_dotenv
 import os
