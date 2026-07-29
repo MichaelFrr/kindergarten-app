@@ -59,3 +59,13 @@ def login_user(user: UserLogin, db: Session = Depends(getdb)):
 @router.get("/me")
 def test_token(current_user: Annotated[User, Depends(get_current_user)]):
     return current_user
+
+@router.post("/refresh")
+def refresh_token():
+    pass
+
+@router.get("/all")
+def get_all(db: Session = Depends(getdb)):
+    query = Select(User)
+    users = db.scalars(query).all()
+    return(users)
