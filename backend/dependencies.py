@@ -9,7 +9,7 @@ from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
 from fastapi import HTTPException, Depends
 from fastapi.security import OAuth2PasswordBearer
 from backend.database import getdb, Select, Session
-from backend.models import User
+from backend.models import User, Child, Classroom
 from backend.redis_client import r
 import secrets
 
@@ -23,7 +23,7 @@ Secret_key = os.environ["SECRET_KEY"]
 pass_hash = PasswordHash.recommended()
 
 ALGORITHM = "HS256"
-TOKEN_EXPIRE_TIME = 30     # this one is in minutes
+TOKEN_EXPIRE_TIME = 1     # this one is in minutes
 REFRESH_TOKEN_EXPIRE_DAYS = 30    # this one is in days
 
 
@@ -38,6 +38,7 @@ def set_refresh_token(uuid):
     expire_seconds = int(timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS).total_seconds())
     refresh_token = generate_opaque_token()
     r.setex(f"refresh:{uuid}", expire_seconds, refresh_token )
+    return refresh_token
 
 def get_blacklisted(access_token):
     return r.get(f"blacklist:{access_token}")
@@ -79,14 +80,14 @@ def decode_token(token: str):
         header = data["header"]
         if header.get("alg") != ALGORITHM:
             raise HTTPException(
-                status_code=401, detail="Forbidden: Invalid Token")
+                status_code=401, detail="Invalid Token")
         user_id:str = payload["sub"]
 
     except ExpiredSignatureError as exc:
         raise HTTPException(
-            status_code=401, detail="Forbidden: Token Has Expired") from exc
+            status_code=401, detail="Token Has Expired") from exc
     except InvalidTokenError as exc:
-        raise HTTPException(status_code=403, detail="Forbidden: Invalid Token") from exc
+        raise HTTPException(status_code=403, detail="Invalid Token") from exc
     return user_id
 
 

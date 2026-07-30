@@ -1,9 +1,9 @@
-from fastapi import Depends, HTTPException, APIRouter, Response
-from backend.schemas import UserResponse, UserCreate, UserLogin, Token
+from fastapi import Depends, HTTPException, APIRouter, Response, Body
+from backend.schemas import UserResponse, UserCreate,RefreshToken, UserLogin, LoginToken, Token
 from backend.database import getdb, Session, Select, or_
 from backend.models import User
 from typing import Annotated
-from backend.dependencies import generate_token, decode_token, get_pass_hash, verify_password, get_current_user
+from backend.dependencies import jwt, InvalidTokenError,ALGORITHM, Secret_key, oauth2_scheme, generate_token, get_pass_hash, verify_password, get_current_user, get_refresh, set_refresh_token
 
 
 router = APIRouter(tags=["User_V1"])
@@ -53,7 +53,8 @@ def login_user(user: UserLogin, db: Session = Depends(getdb)):
     else:
         payload = {"sub": str(uuid), "email": email}
         access_token = generate_token(payload)
-        return Token(access_token=access_token, token_type="bearer")
+        refresh = set_refresh_token(uuid)
+        return LoginToken(access_token=access_token,refresh_token = refresh, token_type="bearer")
 
 
 @router.get("/me")
@@ -61,11 +62,35 @@ def test_token(current_user: Annotated[User, Depends(get_current_user)]):
     return current_user
 
 @router.post("/refresh")
-def refresh_token():
-    pass
+def refresh_token(body: RefreshToken, token: Annotated[str, Depends(oauth2_scheme)], db: Session = Depends(getdb)):
 
+    try:
+        payload = jwt.decode(token, key=Secret_key, algorithms=[ALGORITHM], options={"verify_exp": False})
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Invalid Access Token")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid Access Token ")
+    
+    stored_refresh = get_refresh(user_id)
+    if not stored_refresh or stored_refresh != body.refresh_token:
+        raise HTTPException(status_code=401, detail="Invalid Or Expired Refresh Token")
+        
+    user = db.scalars(Select(User).where(User.uuid == user_id)).first()
+    if not user:
+        raise HTTPException(status_code=401, detail="User not found")
+
+    
+
+
+    new_payload = {"sub": str(user.uuid), "email": user.email}
+    new_token = generate_token(new_payload)
+    return Token(access_token=new_token, token_type="bearer")
+    
 @router.get("/all")
 def get_all(db: Session = Depends(getdb)):
     query = Select(User)
     users = db.scalars(query).all()
     return(users)
+
+
