@@ -52,6 +52,8 @@ class ChildResponse(BaseModel):
     membership_date: date
     class Config:
         from_attributes = True
+
+
 class ClassroomCreate(BaseModel):
     name:str
     capacity:int

@@ -17,7 +17,7 @@ def create_classroom(classroom:ClassroomCreate, db: Session = Depends(getdb)):
 
 
 @router.patch("/update_classroom")
-def update_classroom(classroom_data: ClassroomUpdate, classroom_id=int, db: Session = Depends(getdb)):
+def update_classroom(classroom_data: ClassroomUpdate, classroom_id:int, db: Session = Depends(getdb)):
     classroom = db.scalars(Select(Classroom).where(Classroom.id == classroom_id)).first()
     if not classroom:
         raise HTTPException(status_code=404, detail="Classroom Does Not Exist")
@@ -28,14 +28,16 @@ def update_classroom(classroom_data: ClassroomUpdate, classroom_id=int, db: Sess
     db.refresh(classroom)
     return classroom
 
-@router.get("/classroom/{id}")
-def get_classroom(id = int, db: Session = Depends(getdb)):
+@router.get("/classroom/{id}", response_model=ClassroomResponse)
+def get_classroom(id: int, db: Session = Depends(getdb)):
     classroom = db.scalars(Select(Classroom).where(Classroom.id == id)).first()
     if not classroom:
         raise HTTPException(status_code=404, detail="Classroom Does Not Exist")
     return classroom
 
-@router.get("/classrooms")
+@router.get("/classrooms",  response_model=list[ClassroomResponse])
 def get_all_classrooms(db: Session = Depends(getdb)):
     classrooms = db.scalars(Select(Classroom)).all()
     return classrooms
+
+# Add An Endpoint To Get All the Children In One Class

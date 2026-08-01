@@ -9,6 +9,8 @@ from backend.dependencies import jwt, InvalidTokenError,ALGORITHM, Secret_key, o
 router = APIRouter(tags=["Auth_V1"])
 
 
+# Change Jwt To Include Role
+
 @router.post("/register", response_model=UserResponse)
 def create_user(user: UserCreate, db: Session = Depends(getdb)):
     email = db.scalars(Select(User.email).where(

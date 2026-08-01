@@ -22,6 +22,7 @@ class Child(Base):
     uuid: Mapped[uuid.UUID] = mapped_column(
             UUID, primary_key=True, server_default=text("gen_random_uuid()"))
     parent_uuid: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.uuid"))
+    parent_email: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.email"))
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     classroom_id: Mapped[int] = mapped_column(ForeignKey("classrooms.id"))
     grade: Mapped[str] = mapped_column(String(100))
