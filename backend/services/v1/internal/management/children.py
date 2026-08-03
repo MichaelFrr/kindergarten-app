@@ -34,9 +34,7 @@ def update_child(child_data:ChildUpdate, db: Session = Depends(getdb)):
 def get_child(data: str, db: Session = Depends(getdb)):
     pass
 
-@router.get("/children", response_model=list[ChildResponse])
+@router.get("/children")
 def get_children(db: Session = Depends(getdb)):
-    children = db.scalars(Select(Child)).all()
+    children = db.scalars(Select(Child).join(Classroom)).all()
     return children
-
-# Add Class And Parent Joins

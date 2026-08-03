@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
-from backend.models import Classroom
+from backend.models import Classroom, Child
 from backend.schemas import ClassroomCreate, ClassroomResponse, ClassroomUpdate
-from backend.database import getdb, Session, Select
+from backend.database import getdb, Session, Select,selectinload
 router = APIRouter(tags=["Classroom_V1"])
 
 @router.post("/create_classroom")
@@ -35,9 +35,19 @@ def get_classroom(id: int, db: Session = Depends(getdb)):
         raise HTTPException(status_code=404, detail="Classroom Does Not Exist")
     return classroom
 
-@router.get("/classrooms",  response_model=list[ClassroomResponse])
+@router.get("/classrooms")
 def get_all_classrooms(db: Session = Depends(getdb)):
-    classrooms = db.scalars(Select(Classroom)).all()
-    return classrooms
 
-# Add An Endpoint To Get All the Children In One Class
+    classroom_query = db.execute(Select(Classroom, Child.name).join(Child)).all()
+
+    grouped = {}
+
+    for room, child in classroom_query:
+         if room not in grouped:
+            grouped[room] = []
+         grouped[room].append(child)
+    results = [{"classroom": room, "children": names} for room, names in grouped.items()]
+    
+    return results
+   
+ 

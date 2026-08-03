@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 
 from sqlalchemy import create_engine, Select, or_
-from sqlalchemy.orm import sessionmaker, Session, declarative_base
+from sqlalchemy.orm import sessionmaker, Session, declarative_base, selectinload
 
 load_dotenv()
 
