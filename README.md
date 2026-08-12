@@ -17,4 +17,3 @@ This project isnt done, It lacks these feautures and maybe more:
 12- Logging
 13- API documentation cleanup (Swagger descriptions)
 14- Payment tracking endpoints
-15- Guest endpoints
